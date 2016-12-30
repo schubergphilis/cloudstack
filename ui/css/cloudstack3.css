@@ -62,7 +62,7 @@ body.install-wizard {
 }
 
 #main-area {
-  width: 1024px;
+  width: 1224px;
   height: 729px;
   margin: auto;
   border: 1px solid #D4D4D4;
@@ -97,8 +97,8 @@ a:hover {
 
 /*Table*/
 table {
-  width: 740px;
-  max-width: 777px;
+  width: 940px;
+  max-width: 977px;
   margin: 15px 15px 12px 12px;
   font-size: 13px;
   text-align: left;
@@ -164,7 +164,7 @@ table tbody td.loading {
 
 table tbody td.truncated {
   overflow: visible;
-  max-width: 88px;
+  max-width: 120px;
 }
 
 table tbody td.truncated > span {
@@ -1278,7 +1278,7 @@ div.panel div.list-view {
 }
 
 .detail-view div.list-view {
-  width: 730px;
+  width: 930px;
   border: 1px solid #DAD4D4;
   margin: 41px auto auto !important;
   height: 536px !important;
@@ -1286,12 +1286,12 @@ div.panel div.list-view {
 }
 
 div.panel div.list-view div.data-table table {
-  width: 755px;
+  width: 955px;
   margin-top: 44px;
 }
 
 .detail-view div.list-view div.data-table table {
-  width: 703px !important;
+  width: 903px !important;
 }
 
 .detail-view div.list-view div.data-table table td {
@@ -1302,7 +1302,7 @@ div.panel div.list-view div.fixed-header {
   position: absolute;
   top: 29px;
   left: 12px;
-  width: 760px;
+  width: 960px;
   height: 47px;
   display: table;
   background-color: #F7F7F7;
@@ -1311,7 +1311,7 @@ div.panel div.list-view div.fixed-header {
 }
 
 .detail-view div.list-view div.fixed-header {
-  width: 703px !important;
+  width: 903px !important;
   top: 49px !important;
   left: 32px !important;
   background: #FFFFFF;
@@ -1335,7 +1335,7 @@ div.panel div.list-view div.fixed-header table {
   position: relative;
   left: 0px;
   top: 18px;
-  width: 755px;
+  width: 955px;
   /*+box-shadow:0px 4px 10px #DFE1E3;*/
   -moz-box-shadow: 0px 4px 10px #DFE1E3;
   -webkit-box-shadow: 0px 4px 10px #DFE1E3;
@@ -2365,7 +2365,7 @@ div.detail-group.actions td {
 }
 
 #header div.controls {
-  width: 1026px;
+  width: 1226px;
   height: 48px;
   position: relative;
   margin: 27px auto 0;
@@ -2407,7 +2407,7 @@ div.detail-group.actions td {
   padding: 1px 0 0;
   /*+placement:shift -174px -57px;*/
   position: relative;
-  left: -174px;
+  left: -239px;
   top: -57px;
 }
 
@@ -2473,7 +2473,7 @@ div.detail-group.actions td {
   margin: 0;
   position: absolute;
   top: -47px;
-  left: 890px;
+  left: 1025px;
   cursor: default !important;
   display: inline-block;
   float: left;
@@ -2863,9 +2863,9 @@ div.detail-group.actions td {
 
 /*Browser*/
 #browser {
-  width: 794px;
+  width: 994px;
   height: 100%;
-  max-width: 794px;
+  max-width: 994px;
   position: relative;
   float: left;
   overflow: hidden;
@@ -2987,7 +2987,7 @@ div.detail-group.actions td {
 }
 
 .detail-view .ui-tabs-panel div.toolbar {
-  width: 768px;
+  width: 968px;
   background: transparent;
   border: none;
   margin-top: 8px;
@@ -4329,8 +4329,8 @@ Dialogs*/
 
 /**** Head*/
 .dashboard.admin .dashboard-container.head {
-  width: 766px;
-  height: 331px;
+  width: 966px;
+  height: 360px;
   margin: 9px 0 0;
   float: left;
 }
@@ -4389,18 +4389,18 @@ Dialogs*/
 
 /**** Charts / stats*/
 .dashboard.admin .zone-stats {
-  width: 774px;
-  height: 348px;
+  width: 974px;
+  height: 346px;
   overflow: auto;
   overflow-x: hidden;
   /*+placement:shift 0px -11px;*/
   position: relative;
   left: 0px;
-  top: -11px;
+  top: -1px;
 }
 
 .dashboard.admin .zone-stats ul {
-  width: 796px;
+  width: 996px;
   /*+placement:shift -2px 11px;*/
   position: relative;
   left: -2px;
@@ -4408,7 +4408,7 @@ Dialogs*/
 }
 
 .dashboard.admin .zone-stats ul li {
-  width: 388px;
+  width: 488px;
   font-size: 14px;
   height: 79px;
   float: left;
@@ -4428,7 +4428,7 @@ Dialogs*/
 }
 
 .dashboard.admin .zone-stats ul li .label {
-  width: 111px;
+  width: 161px;
   float: left;
   font-weight: 100;
   border-bottom: 1px solid #E2E2E2;
@@ -4592,6 +4592,7 @@ Dialogs*/
   height: 270px;
   overflow: hidden;
   position: relative;
+  width: 468px;
 }
 
 .dashboard.admin .dashboard-container.sub.alerts.last {
@@ -4599,7 +4600,7 @@ Dialogs*/
 }
 
 .dashboard.admin .dashboard-container.sub.alerts ul {
-  width: 368px;
+  width: 468px;
   height: 234px;
   overflow: auto;
   overflow-x: hidden;
@@ -5059,7 +5060,7 @@ Dialogs*/
 }
 
 .system-chart.dashboard.admin .dashboard-container {
-  width: 740px;
+  width: 930px;
   border: none;
 }
 
@@ -5492,7 +5493,7 @@ label.error {
 }
 
 .multi-wizard .progress ul {
-  width: 780px;
+  width: 900px;
   height: 40px;
   float: left;
   clear: both;
@@ -9076,7 +9077,7 @@ div.container div.panel div#details-tab-addloadBalancer.detail-group div.loadBal
 /*System Dashboard*/
 .system-dashboard {
   height: 258px;
-  width: 762px;
+  width: 962px;
   display: block;
   /*+border-radius:3px;*/
   -moz-border-radius: 3px;
@@ -11413,7 +11414,8 @@ div.ui-dialog div.health-check div.health-check-description {
 }
 
 div.ui-dialog div.health-check div.form-container form div.form-item {
-  width: 58% margin-left:116px;
+  width: 58%;
+  margin-left: 116px;
   margin-top: -16px;
   margin-bottom: 30px;
 }

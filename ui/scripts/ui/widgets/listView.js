@@ -20,9 +20,9 @@
 (function($, cloudStack, _l, _s) {
     var uiActions = {
         standard: function($instanceRow, args, additional) {
-        	var isAddAction = args.action.isAdd;
-        	        	
-        	var listViewArgs = $instanceRow.closest('div.list-view').data('view-args');
+            var isAddAction = args.action.isAdd;
+
+            var listViewArgs = $instanceRow.closest('div.list-view').data('view-args');
             var notification = args.action.notification ? args.action.notification : {};
             var messages = args.action ? args.action.messages : {};
             var preAction = args.action ? args.action.preAction : {};
@@ -88,7 +88,7 @@
 
                 // Make sure the master checkbox is unselected
                 if (multiSelect) {
-                    $('div.list-view').find('input.multiSelectMasterCheckbox').attr('checked', false);
+                    $instanceRow.closest('.list-view').find('input.multiSelectMasterCheckbox').attr('checked', false);
                 }
 
                 var externalLinkAction = action.externalLink;
@@ -184,6 +184,7 @@
                                 // Make copy of previous row, in case data is needed
                                 $prevRow = $instanceRow.clone();
                                 if (multiSelect) {
+                                    $prevRow.find('.quick-view').addClass('loading-overlay');
                                     $.each($prevRow, function(index, elem) {
                                         $(elem).data($($instanceRow[index]).data());
                                     });
@@ -274,7 +275,7 @@
                                                         });
                                                     } else {
                                                         $newRow = replaceItem($instanceRow,
-                                                    	    args.data, //$.extend($instanceRow.data('json-obj'), args.data), /* $.extend($instanceRow.data('json-obj'), args.data) causes CLOUDSTACK-4687 */
+                                                            args.data,
                                                             actionFilter);
                                                     }
                                                 } else {
@@ -363,6 +364,9 @@
                                 );
                             },
                             error: function(message) {
+                                $instanceRow.removeClass('loading');
+                                $instanceRow.find('td.quick-view').removeClass('loading-overlay');
+
                                 if (!isHeader) {
                                     if (($.isPlainObject(args.action.createForm) && args.action.addRow != 'false') ||
                                         (!args.action.createForm && args.action.addRow == 'true')) {
@@ -465,7 +469,7 @@
                                         data: [
                                             $.extend(args.data, {
                                                 state: 'Creating',
-                                                status: 'Creating',
+                                                status: 'state.Creating',
                                                 allocationstate: 'Creating'
                                             })
                                         ]
@@ -512,7 +516,7 @@
                                     data: [
                                         $.extend(args.data, {
                                             state: 'Creating',
-                                            status: 'Creating',
+                                            status: 'state.Creating',
                                             allocationstate: 'Creating'
                                         })
                                     ]
@@ -625,10 +629,10 @@
                 showEditField();
             } else if ($editInput.val() != $label.html()) { //click Save button with changed value
                 if ($editInput.val().match(/<|>/)) {
-                    cloudStack.dialog.notice({ message: 'message.validate.invalid.characters' }); 
+                    cloudStack.dialog.notice({ message: 'message.validate.invalid.characters' });
                     return false;
                 }
-                
+
                 $edit.animate({
                     opacity: 0.5
                 });
@@ -761,10 +765,12 @@
     var createHeader = function(preFilter, fields, $table, actions, options) {
         if (!options) options = {};
 
-        var $thead = $('<thead>').prependTo($table).append($('<tr>'));
+        var $tr = $('<tr>');
+        var $thead = $('<thead>').prependTo($table).append($tr);
         var reorder = options.reorder;
         var detailView = options.detailView;
         var multiSelect = options.multiSelect;
+        var groupableColumns = options.groupableColumns;
         var viewArgs = $table.closest('.list-view').data('view-args');
         var uiCustom = viewArgs.uiCustom;
         var hiddenFields = [];
@@ -772,8 +778,110 @@
         if (preFilter != null)
             hiddenFields = preFilter();
 
+        var addColumnToTr = function($tr, key, colspan, label, needsCollapsibleColumn) {
+            var trText = _l(label);
+            var $th = $('<th>').addClass(key).attr('colspan', colspan).appendTo($tr);
+            if ($th.index()) $th.addClass('reduced-hide');
+            $th.css({'border-right': '1px solid #C6C3C3', 'border-left': '1px solid #C6C3C3'});
+            if (needsCollapsibleColumn) {
+                var karetLeft = $('<span>').css({'margin-right': '10px'});
+                karetLeft.attr('title', trText);
+                karetLeft.appendTo($th);
+                $('<span>').html('&laquo').css({'font-size': '15px', 'float': 'right'}).appendTo(karetLeft);
+                $('<span>').html(trText).appendTo(karetLeft);
+
+                $th.click(function(event) {
+                    event.stopPropagation();
+                    var $th = $(this);
+                    var startIndex = 0;
+                    $th.prevAll('th').each(function() {
+                        startIndex += parseInt($(this).attr('colspan'));
+                    });
+                    var endIndex = startIndex + parseInt($th.attr('colspan'));
+                    // Hide Column group
+                    $th.hide();
+                    $th.closest('table').find('tbody td').filter(function() {
+                        return $(this).index() >= startIndex && $(this).index() < endIndex;
+                    }).hide();
+                    $th.closest('table').find('thead tr:last th').filter(function() {
+                        return $(this).index() >= startIndex && $(this).index() < endIndex;
+                    }).hide();
+                    // Show collapsible column with blank cells
+                    $th.next('th').show();
+                    $th.closest('table').find('tbody td').filter(function() {
+                        return $(this).index() == endIndex;
+                    }).show();
+                    $th.closest('table').find('thead tr:last th').filter(function() {
+                        return $(this).index() == endIndex;
+                    }).show();
+                    // Refresh list view
+                    $tr.closest('.list-view').find('.no-split').dataTable('refresh');
+                });
+
+                var karetRight = addColumnToTr($tr, 'collapsible-column', 1, '');
+                $('<span>').html(trText.substring(0,3)).appendTo(karetRight);
+                $('<span>').css({'font-size': '15px'}).html(' &raquo').appendTo(karetRight);
+                karetRight.attr('title', trText);
+                karetRight.css({'border-right': '1px solid #C6C3C3', 'border-left': '1px solid #C6C3C3', 'min-width': '10px', 'width': '10px', 'max-width': '45px', 'padding': '2px'});
+                karetRight.hide();
+                karetRight.click(function(event) {
+                    event.stopPropagation();
+                    var prevTh = $(this).prev('th');
+                    var startIndex = 0;
+                    prevTh.prevAll('th').each(function() {
+                        startIndex += parseInt($(this).attr('colspan'));
+                    });
+                    var endIndex = startIndex + parseInt(prevTh.attr('colspan'));
+
+                    prevTh.show();
+                    prevTh.closest('table').find('tbody td').filter(function() {
+                        return $(this).index() >= startIndex && $(this).index() < endIndex;
+                    }).show();
+                    prevTh.closest('table').find('thead tr:last th').filter(function() {
+                        return $(this).index() >= startIndex && $(this).index() < endIndex;
+                    }).show();
+
+                    prevTh.next('th').hide();
+                    prevTh.closest('table').find('tbody td').filter(function() {
+                        return $(this).index() == endIndex;
+                    }).hide();
+                    prevTh.closest('table').find('thead tr:last th').filter(function() {
+                        return $(this).index() == endIndex;
+                    }).hide();
+
+                    $tr.closest('.list-view').find('.no-split').dataTable('refresh');
+                });
+            } else {
+                $th.html(trText);
+            }
+            return $th;
+        };
+
+        if (groupableColumns) {
+            $tr.addClass('groupable-header-columns').addClass('groupable-header');
+            $.each(fields, function(key) {
+                var field = this;
+                if (field.columns) {
+                    var colspan = Object.keys(field.columns).length;
+                    addColumnToTr($tr, key, colspan, field.label, true);
+                } else {
+                    var label = '';
+                    if (key == 'name') {
+                        label = 'label.resources';
+                    }
+                    addColumnToTr($tr, key, 1, label);
+                }
+                return true;
+            });
+            if (detailView && !$.isFunction(detailView) && !detailView.noCompact && !uiCustom) {
+                addColumnToTr($tr, 'quick-view', 1, '');
+            }
+            $tr = $('<tr>').appendTo($thead);
+            $tr.addClass('groupable-header');
+        }
+
         if (multiSelect) {
-            var $th = $('<th>').addClass('multiselect').appendTo($thead.find('tr'));
+            var $th = $('<th>').addClass('multiselect').appendTo($tr);
             var content = $('<input>')
                 .attr('type', 'checkbox')
                 .addClass('multiSelectMasterCheckbox')
@@ -782,7 +890,7 @@
             content.click(function() {
                 var checked = $(this).is(':checked');
                 $('.multiSelectCheckbox').attr('checked', checked);
-                toggleMultiSelectActions(checked);
+                toggleMultiSelectActions($table.closest('.list-view'), checked);
             });
         }
 
@@ -790,18 +898,24 @@
             if ($.inArray(key, hiddenFields) != -1)
                 return true;
             var field = this;
-            var $th = $('<th>').addClass(key).appendTo($thead.find('tr'));
-
-            if ($th.index()) $th.addClass('reduced-hide');
-
-            $th.html(_l(field.label));
-
+            if (field.columns) {
+                $.each(field.columns, function(idx) {
+                    var subfield = this;
+                    addColumnToTr($tr, key, 1, subfield.label);
+                    return true;
+                });
+                var blankCell = addColumnToTr($tr, 'collapsible-column', 1, '');
+                blankCell.css({'min-width': '10px', 'width': '10px'});
+                blankCell.hide();
+            } else {
+                addColumnToTr($tr, key, 1, field.label);
+            }
             return true;
         });
 
         // Re-order row buttons
         if (reorder) {
-            $thead.find('tr').append(
+            $tr.append(
                 $('<th>').html(_l('label.order')).addClass('reorder-actions reduced-hide')
             );
         }
@@ -822,7 +936,7 @@
         );
 
         if (actions && !options.noActionCol && renderActionCol(actions) && actionsArray.length != headerActionsArray.length) {
-            $thead.find('tr').append(
+            $tr.append(
                 $('<th></th>')
                 .html(_l('label.actions'))
                 .addClass('actions reduced-hide')
@@ -831,7 +945,7 @@
 
         // Quick view
         if (detailView && !$.isFunction(detailView) && !detailView.noCompact && !uiCustom) {
-            $thead.find('tr').append(
+            $tr.append(
                 $('<th></th>')
                 .html(_l('label.quickview'))
                 .addClass('quick-view reduced-hide')
@@ -1000,7 +1114,7 @@
             complete: function($newPanel) {
                 // Make detail view element
                 if (!args.pageGenerator && !data.isMaximized)
-                    $detailView = $('<div>').addClass('detail-view').detailView(data).appendTo($newPanel);
+                    $detailView = $('<div>').addClass('detail-view label-hovered').detailView(data).appendTo($newPanel);
                 else if (!args.pageGenerator && data.isMaximized)
                     $detailView = $newPanel.detailView(data);
                 else
@@ -1029,8 +1143,10 @@
         var listViewArgs = $listView.data('view-args');
         var uiCustom = listViewArgs.uiCustom;
         var subselect = uiCustom ? listViewArgs.listView.subselect : null;
+        var hasCollapsibleColumn = false;
 
         if (!(data && data.length)) {
+            $listView.data('end-of-table', true);
             if (!$tbody.find('tr').size()) {
                 return [
                     $('<tr>').addClass('empty last').append(
@@ -1072,9 +1188,10 @@
                         var numRows = $(this).parents('tbody').find('input.multiSelectCheckbox').size();
                         var numRowsChecked = $(this).parents('tbody').find('input.multiSelectCheckbox:checked').size();
                         var enabled = checked || (numRowsChecked > 0);
-                        toggleMultiSelectActions(enabled);
 
-                        $('input.multiSelectMasterCheckbox').attr('checked', (numRows === numRowsChecked));
+                        toggleMultiSelectActions($td.closest('.list-view'), enabled);
+
+                        $td.closest('.list-view').find('input.multiSelectMasterCheckbox').attr('checked', (numRows === numRowsChecked));
                     });
 
                 $td.append(
@@ -1082,8 +1199,25 @@
                 );
             }
 
-            // Add field data
+            var reducedFields = {};
+            var idx = 0;
             $.each(fields, function(key) {
+                var field = this;
+                if (field.columns) {
+                    $.each(field.columns, function(innerKey) {
+                        reducedFields[innerKey] = this;
+                    });
+                    reducedFields['blank-cell-' + idx] = {blankCell: true};
+                    idx += 1;
+                    hasCollapsibleColumn = true;
+                } else {
+                    reducedFields[key] = this;
+                }
+                return true;
+            });
+
+            // Add field data
+            $.each(reducedFields, function(key) {
                 if ($.inArray(key, hiddenFields) != -1)
                     return true;
                 var field = this;
@@ -1097,11 +1231,43 @@
                     $td.addClass('truncated');
                 }
 
+                if (field.blankCell) {
+                    $td.css({'min-width': '10px', 'width': '10px'});
+                    $td.hide();
+                }
+
                 if (field.indicator) {
                     $td.addClass('state').addClass(field.indicator[content]);
 
                     // Disabling indicator for now per new design
                     //$tr.find('td:first').addClass('item-state-' + field.indicator[content]);
+                }
+
+                if (field.thresholdcolor && field.thresholds) {
+                    if ((field.thresholds.disable in dataItem) && (field.thresholds.notification in dataItem)) {
+                        var disableThreshold = parseFloat(dataItem[field.thresholds.disable]);
+                        var notificationThreshold = parseFloat(dataItem[field.thresholds.notification]);
+                        var value = parseFloat(content);
+                        if (value >= disableThreshold) {
+                            $td.addClass('alert-disable-threshold');
+                        } else if (value >= notificationThreshold) {
+                            $td.addClass('alert-notification-threshold');
+                        }
+                    }
+                }
+
+
+                if (field.limitcolor && field.limits) {
+                    if ((field.limits.lowerlimit in dataItem) && (field.limits.upperlimit in dataItem)) {
+                        var upperlimit = parseFloat(dataItem[field.limits.upperlimit]);
+                        var lowerlimit = parseFloat(dataItem[field.limits.lowerlimit ]);
+                        var value = parseFloat(content);
+                        if (value <= lowerlimit) {
+                            $td.addClass('alert-disable-threshold');
+                        } else if (value <= upperlimit) {
+                            $td.addClass('alert-notification-threshold');
+                        }
+                    }
                 }
 
                 if (field.id == true) id = field.id;
@@ -1117,14 +1283,35 @@
                     createEditField($td).appendTo($td);
                 } else {
                     $td.html('');
-                    $td.append(
-                        $('<span></span>').html(_s(content))
-                    );
+
+                    if ($.isArray(content)) {
+                        var $ul = $('<ul>');
+
+                        $(content).map(function (index, contentItem) {
+                            var $li = $('<li>');
+
+                            $li.append('<span>').text(contentItem.toString());
+                            $li.appendTo($ul);
+                        });
+
+                        $ul.appendTo($td);
+                    } else if (field.span == false) {
+                        $td.append(
+                            $('<pre>').html(_s(content))
+                        );
+                    } else {
+                        var span = $('<span>').html(_s(content));
+                        if (field.compact) {
+                            span.addClass('compact');
+                            span.html('');
+                        }
+                        $td.append(span);
+                    }
                 }
 
                 $td.attr('title', _s(content));
             });
-            
+
             var $first = $tr.find('td:first');
             if (multiSelect)
                 $first = $first.next();
@@ -1184,15 +1371,15 @@
                                 rowActions[actionName]($tr);
                                 var map1 = {};
                                 $tr.closest('tbody').find('tr').each(function() {
-                                	/* 
-                                	 * fire only one sorting API call(updateXXXXXXX&sortKey=n&id=UUID) for items who have the same UUID. 
-                                	 * e.g. An Template/ISO of multiple zones have the same UUID.
-                                	 */
-                                	var objId = $(this).data('json-obj').id;
-                                	if(!(objId in map1)) { 
+                                    /*
+                                     * fire only one sorting API call(updateXXXXXXX&sortKey=n&id=UUID) for items who have the same UUID.
+                                     * e.g. An Template/ISO of multiple zones have the same UUID.
+                                     */
+                                    var objId = $(this).data('json-obj').id;
+                                    if(!(objId in map1)) {
                                     sort($(this), action);
-                                		map1[objId] = 1;
-                                	}                                       
+                                        map1[objId] = 1;
+                                    }
                                 });
                                 $tr.closest('.data-table').dataTable('selectRow', $tr.index());
 
@@ -1214,15 +1401,15 @@
                             rowActions._std($tr, function() {});
                             var map1 = {};
                             $tr.closest('tbody').find('tr').each(function() {
-                            	/* 
-                            	 * fire only one sorting API call(updateXXXXXXX&sortKey=n&id=UUID) for items who have the same UUID. 
-                            	 * e.g. An Template/ISO of multiple zones have the same UUID.
-                            	 */
-                            	var objId = $(this).data('json-obj').id;
-                            	if(!(objId in map1)) { 
+                                /*
+                                 * fire only one sorting API call(updateXXXXXXX&sortKey=n&id=UUID) for items who have the same UUID.
+                                 * e.g. An Template/ISO of multiple zones have the same UUID.
+                                 */
+                                var objId = $(this).data('json-obj').id;
+                                if(!(objId in map1)) {
                                 sort($(this), reorder.moveDrag);
-                            	    map1[objId] = 1;
-                            	}
+                                    map1[objId] = 1;
+                                }
                             });
                         }
                     });
@@ -1307,7 +1494,10 @@
                     if ($(this).is(':checked')) {
                         // Populate data
                         subselect.dataProvider({
-                            context: $.extend(true, {}, options.context, {
+                            context: $.extend(true, {},
+                                ($listView && $listView.data('view-args') ?
+                                    $.extend(true, {}, $listView.data('view-args').context, options.context) :
+                                    options.context), {
                                 instances: [$tr.data('json-obj')]
                             }),
                             response: {
@@ -1328,7 +1518,7 @@
                                         $select.hide();
                                     }
 
-                                    $select.find('option:first').attr('selected', 'selected'); 
+                                    $select.find('option:first').attr('selected', 'selected');
                                     $listView.find('.data-table').dataTable('refresh');
                                 }
                             }
@@ -1353,8 +1543,8 @@
                     .appendTo($tr);
                 $quickView.mouseover(
                     // Show quick view
-
                     function() {
+                        var $quickView = $(this);
                         var $quickViewTooltip = $('<div>').addClass('quick-view-tooltip hovered-elem');
                         var $tr = $quickView.closest('tr');
                         var $listView = $tr.closest('.list-view');
@@ -1411,7 +1601,7 @@
                                         },
                                         onPerformAction: function() {
                                             $tr.addClass('loading').find('td:last').prepend($('<div>').addClass('loading'));
-                                            $quickViewTooltip.hide();
+                                            $quickViewTooltip.detach();
                                         },
                                         onActionComplete: function() {
                                             if (listViewArgs.onActionComplete) {
@@ -1438,8 +1628,8 @@
                         });
                         $quickViewTooltip.css({
                             position: 'absolute',
-                            left: $tr.offset().left + $tr.width() - $quickViewTooltip.width(),
-                            top: $quickView.offset().top - 50,
+                            left: $quickView.offset().left + $quickView.outerWidth() - $quickViewTooltip.width() - 2*(parseInt($quickView.css('border-left-width')) + parseInt($quickView.css('border-right-width'))),
+                            top: $quickView.offset().top,
                             zIndex: $tr.closest('.panel').zIndex() + 1
                         });
 
@@ -1452,6 +1642,14 @@
                 );
             }
         });
+
+        // Toggle collapsible column to fix alignment of hidden/shown cells
+        if (hasCollapsibleColumn) {
+            $tbody.closest('table').find('tr:first th.collapsible-column:visible').prev('th').click();
+        }
+
+        // Re-sort table if a column was previously sorted
+        $listView.find('thead tr:last th.sorted').click().click();
 
         return rows;
     };
@@ -1483,6 +1681,7 @@
         var reorder = options.reorder;
         var multiSelect = options.multiSelect;
         var $tbody = $table.find('tbody');
+        var $listView = $table.closest('.list-view');
 
         if (!loadArgs) loadArgs = {
             page: 1,
@@ -1493,11 +1692,16 @@
             }
         };
 
+        if (options.clearEndTable) {
+            $listView.data('page', 1);
+            $table.closest('.list-view').data('end-of-table', false);
+        }
+
         if (!append) {
             if (!append) $table.find('tbody tr').remove();
         }
 
-        var viewArgs = $table.closest('.list-view').data('view-args');
+        var viewArgs = $listView.data('view-args');
         var uiCustom = viewArgs.listView ? viewArgs.listView.uiCustom : false;
 
         setLoading($table, function(setLoadingArgs) {
@@ -1519,12 +1723,6 @@
                         $table.dataTable(null, {
                             noSelect: uiCustom
                         });
-
-                        if (args.data &&
-                            args.data.length < pageSize &&
-                            options.setEndTable) {
-                            options.setEndTable();
-                        }
 
                         setTimeout(function() {
                             $table.dataTable('refresh');
@@ -1566,7 +1764,7 @@
 
             sectionPreFilter = args.sectionSelect.preFilter ?
                 args.sectionSelect.preFilter({
-                    context: cloudStack.context
+                    context: $.extend({}, cloudStack.context, args.context)
                 }) : null;
         } else {
             $sectionSelect.hide();
@@ -1667,16 +1865,13 @@
         var $toolbar = $('<div>').addClass('toolbar').appendTo($listView);
         var $table = $('<table>').appendTo($listView);
         var infScrollTimer;
-        var page = 1;
         var actions = listViewData.actions;
         var reorder = listViewData.reorder;
         var multiSelect = listViewData.multiSelect;
         var tableHeight = $table.height();
-        var endTable = false;
-        var setEndTable = function() {
-            endTable = true;
-        }
 
+        $listView.data('end-of-table', false);
+        $listView.data('page', 1);
 
         var $switcher;
         if (args.sections) {
@@ -1728,11 +1923,21 @@
         // List view header actions
         if (listViewData.actions) {
             $.each(listViewData.actions, function(actionName, action) {
-                if (!action.isHeader || (
-                    action.preFilter && !action.preFilter({
-                        context: $listView.data('view-args').context ? $listView.data('view-args').context : cloudStack.context
-                    })
-                )) return true;
+                var preFilter = function(extendContext) {
+                    var context = $.extend(true, {},
+                        $listView.data('view-args').context ? $listView.data('view-args').context : cloudStack.context);
+
+                    if (extendContext) {
+                        $.extend(context, extendContext);
+                    }
+
+                    return action.preFilter ? action.preFilter({
+                        id: listViewData.id,
+                        context: context
+                    }) : null;
+                }
+
+                if (!action.isHeader || (action.preFilter && !preFilter())) return true;
 
                 var $action = $('<div>')
                     .addClass('button action main-action reduced-hide').addClass(actionName)
@@ -1743,6 +1948,10 @@
                 if (action.isMultiSelectAction) {
                     $action.addClass('multiSelectAction');
                     $action.hide();
+
+                    if (action.preFilter) {
+                        $action.data('list-view-action-prefilter', preFilter);
+                    }
                 }
 
                 $toolbar.append($action)
@@ -1760,10 +1969,21 @@
                 reorder: reorder,
                 detailView: listViewData.detailView,
                 'multiSelect': multiSelect,
-                noActionCol: listViewData.noActionCol
+                noActionCol: listViewData.noActionCol,
+                groupableColumns: listViewData.groupableColumns
             });
+
+        if (listViewData.noSplit) {
+            $table.addClass('no-split');
+        }
+
+        if (listViewData.horizontalOverflow) {
+            $table.addClass('horizontal-overflow');
+            $table.parent().css({'overflow-x': 'auto'});
+        }
+
         createFilters($toolbar, listViewData.filters);
-                
+
         if (listViewData.hideSearchBar != true) {
         createSearchBar($toolbar, listViewData);
         }
@@ -1774,7 +1994,7 @@
             listViewData.preFilter,
             listViewData.fields,
             false, {
-                page: page,
+                page: $listView.data('page'),
                 filterBy: {
                     kind: $listView.find('select[id=filterBy]').val(),
                     search: {
@@ -1788,7 +2008,6 @@
                 context: args.context,
                 reorder: reorder,
                 detailView: listViewData.detailView,
-                setEndTable: setEndTable,
                 'multiSelect': multiSelect,
                 noActionCol: listViewData.noActionCol
             }
@@ -1821,15 +2040,16 @@
         //basic search
         var basicSearch = function() {
             $listView.removeData('advSearch');
+            advancedSearchData = {};
 
-            page = 1;
+            $listView.data('page', 1);
             loadBody(
                 $table,
                 listViewData.dataProvider,
                 listViewData.preFilter,
                 listViewData.fields,
                 false, {
-                    page: page,
+                    page: $listView.data('page'),
                     filterBy: {
                         kind: $listView.find('select[id=filterBy]').val(),
                         search: {
@@ -1842,7 +2062,6 @@
                     context: $listView.data('view-args').context,
                     reorder: listViewData.reorder,
                     detailView: listViewData.detailView,
-                    setEndTable: setEndTable,
                     'multiSelect': multiSelect,
                     noActionCol: listViewData.noActionCol
                 }
@@ -1875,15 +2094,14 @@
         //advanced search
         var advancedSearch = function(args) {
             $listView.data('advSearch', args.data);
-
-            page = 1;
+            $listView.data('page', 1);
             loadBody(
                 $table,
                 listViewData.dataProvider,
                 listViewData.preFilter,
                 listViewData.fields,
                 false, {
-                    page: page,
+                    page: $listView.data('page'),
                     filterBy: {
                         kind: $listView.find('select[id=filterBy]').val(),
                         advSearch: args.data
@@ -1893,12 +2111,13 @@
                     context: $listView.data('view-args').context,
                     reorder: listViewData.reorder,
                     detailView: listViewData.detailView,
-                    setEndTable: setEndTable,
                     'multiSelect': multiSelect,
                     noActionCol: listViewData.noActionCol
                 }
             );
         };
+
+        var advancedSearchData = {};
 
         var closeAdvancedSearch = function() {
             $listView.find('.advanced-search .form-container:visible').remove();
@@ -1911,14 +2130,20 @@
                 return false;
             }
 
+            // Setup advanced search default values, when existing data is present
+            $.each(listViewData.advSearchFields, function(fieldID, field) {
+                field.defaultValue = advancedSearchData[fieldID];
+            });
+
             var form = cloudStack.dialog.createForm({
                 noDialog: true,
                 form: {
-                    title: 'Advanced Search',
+                    title: 'label.advanced.search',
                     fields: listViewData.advSearchFields
                 },
                 after: function(args) {
                     advancedSearch(args);
+                    advancedSearchData = args.data;
                     $listView.find('.button.search#basic_search').siblings('.search-bar').find('input').val(''); //clear basic search input field to avoid confusion of search result
                     closeAdvancedSearch();
                 }
@@ -1931,7 +2156,7 @@
             $form.find('input[type=submit]')
                 .show()
                 .appendTo($form)
-                .val('Search');
+                .val(_l('label.search'));
 
             // Cancel button
             $form.append(
@@ -1951,7 +2176,11 @@
 
         // Infinite scrolling event
         $listView.bind('scroll', function(event) {
-            if (args.listView && args.listView.disableInfiniteScrolling) return false;
+            var listView = args.listView;
+            if (!listView && args.sections && args.sections.hasOwnProperty(args.activeSection)) {
+                listView = args.sections[args.activeSection].listView;
+            }
+            if (listView && listView.disableInfiniteScrolling) return false;
             if ($listView.find('tr.last, td.loading:visible').size()) return false;
 
             clearTimeout(infScrollTimer);
@@ -1959,8 +2188,8 @@
                 var loadMoreData = $listView.scrollTop() >= ($table.height() - $listView.height()) - $listView.height() / 4;
                 var context = $listView.data('view-args').context;
 
-                if (loadMoreData && !endTable) {
-                    page = page + 1;
+                if (loadMoreData && !$listView.data('end-of-table')) {
+                    $listView.data('page', $listView.data('page') + 1);
 
                     var filterBy = {
                         kind: $listView.find('select[id=filterBy]').length > 0 ? $listView.find('select[id=filterBy]').val() : 'all'
@@ -1980,12 +2209,11 @@
                         listViewData.preFilter,
                         listViewData.fields, true, {
                             context: context,
-                            page: page,
+                            page: $listView.data('page'),
                             filterBy: filterBy
                         }, actions, {
                             reorder: listViewData.reorder,
                             detailView: listViewData.detailView,
-                            setEndTable: setEndTable,
                             'multiSelect': multiSelect,
                             noActionCol: listViewData.noActionCol
                         });
@@ -2019,7 +2247,7 @@
             var jsonObj = $target.closest('tr').data('jsonObj');
             var detailViewArgs;
             var detailViewPresent = ($target.closest('div.data-table tr td.first').size() &&
-                listViewData.detailView && !$target.closest('div.edit').size());
+                listViewData.detailView && !$target.closest('div.edit').size()) && !listViewData.detailView.noPanelView;
             var uiCustom = args.uiCustom == true ? true : false;
 
             // Click on first item will trigger detail view (if present)
@@ -2104,7 +2332,7 @@
                     $tr = $target.closest('div.list-view').find('tr:first'); // Dummy row
                 } else {
                     if (listViewData.actions[actionID].isMultiSelectAction) {
-                        $tr = $('div.list-view').find('input.multiSelectCheckbox:checked').parents('tr');
+                        $tr = $listView.find('input.multiSelectCheckbox:checked').parents('tr');
                     } else {
                         $tr = $target.closest('tr');
                     }
@@ -2217,11 +2445,33 @@
         return $newRow;
     };
 
-    var toggleMultiSelectActions = function(enabled) {
-        var $listView = $('div.list-view');
+    var toggleMultiSelectActions = function($listView, enabled) {
+        var $multiSelectActions = $listView.find('div.main-action.multiSelectAction');
+
         $listView.find('div.action.add')[enabled ? 'hide' : 'show']();
         $listView.find('div.main-action:not(.multiSelectAction)')[enabled ? 'hide' : 'show']();
-        $listView.find('div.main-action.multiSelectAction')[enabled ? 'show' : 'hide']();
+        $multiSelectActions.hide();
+
+        if (enabled) {
+            $multiSelectActions.filter(function() {
+                var preFilter = $(this).data('list-view-action-prefilter');
+                var $selectedVMs;
+                var context = {};
+
+                if (preFilter) {
+                    $selectedVMs = $listView.find('tbody tr').filter(function() {
+                        return $(this).find('td.multiselect input[type=checkbox]:checked').size()
+                    });
+                    context[$listView.data('view-args').activeSection] = $selectedVMs.map(function(index, item) {
+                        return $(item).data('json-obj');
+                    });
+
+                    return preFilter(context);
+                }
+
+                return true;
+            }).show();
+        }
     }
 
     $.fn.listView = function(args, options) {
@@ -2253,6 +2503,7 @@
                 false,
                 null,
                 listViewArgs.actions, {
+                    clearEndTable: true,
                     multiSelect: listViewArgs.multiSelect,
                     context: this.data('view-args').context,
                     detailView: listViewArgs.detailView
