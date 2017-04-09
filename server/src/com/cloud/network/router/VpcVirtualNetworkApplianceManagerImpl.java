@@ -1259,7 +1259,7 @@ public class VpcVirtualNetworkApplianceManagerImpl extends VirtualNetworkApplian
     @DB
     protected NicProfile createPrivateNicProfileForGateway(VpcGateway privateGateway) {
         Network privateNetwork = _networkModel.getNetwork(privateGateway.getNetworkId());
-        PrivateIpVO ipVO = _privateIpDao.allocateIpAddress(privateNetwork.getDataCenterId(), privateNetwork.getId(), privateGateway.getIp4Address());
+        PrivateIpVO ipVO = _privateIpDao.allocateIpAddress(privateNetwork.getDataCenterId(), privateNetwork.getId(), privateGateway.getVpcId(), privateGateway.getIp4Address());
         Nic privateNic = _nicDao.findByIp4AddressAndNetworkId(ipVO.getIpAddress(), privateNetwork.getId());
 
         NicProfile privateNicProfile = new NicProfile();
