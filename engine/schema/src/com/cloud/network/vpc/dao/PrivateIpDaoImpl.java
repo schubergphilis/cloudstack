@@ -68,11 +68,13 @@ public class PrivateIpDaoImpl extends GenericDaoBase<PrivateIpVO, Long> implemen
     }
 
     @Override
-    public PrivateIpVO allocateIpAddress(long dcId, long networkId, String requestedIp) {
+    public PrivateIpVO allocateIpAddress(long dcId, long networkId, final Long vpcId, String requestedIp) {
         SearchCriteria<PrivateIpVO> sc = AllFieldsSearch.create();
         sc.setParameters("networkId", networkId);
-        sc.setParameters("taken", (Date)null);
 
+        if (vpcId != null) {
+            sc.setParameters("vpc_id", vpcId);
+        }
         if (requestedIp != null) {
             sc.setParameters("ipAddress", requestedIp);
         }
