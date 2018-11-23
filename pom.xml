@@ -71,7 +71,7 @@
     <cs.axis.version>1.4</cs.axis.version>
     <cs.axis2.version>1.5.6</cs.axis2.version>
     <cs.rampart.version>1.5.1</cs.rampart.version>
-    <cs.axiom.version>1.2.8</cs.axiom.version>
+    <cs.axiom.version>1.2.14</cs.axiom.version>
     <cs.neethi.version>2.0.4</cs.neethi.version>
     <cs.servlet.version>2.4</cs.servlet.version>
     <cs.jstl.version>1.2</cs.jstl.version>
@@ -638,7 +638,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore />
+                    <ignore/>
                   </action>
                 </pluginExecution>
                 <pluginExecution>
@@ -651,7 +651,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore />
+                    <ignore/>
                   </action>
                 </pluginExecution>
                 <pluginExecution>
@@ -665,7 +665,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore/>
                   </action>
                 </pluginExecution>
                 <pluginExecution>
@@ -679,7 +679,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                      <ignore></ignore>
+                      <ignore/>
                   </action>
                 </pluginExecution>
               </pluginExecutions>
